@@ -1,22 +1,29 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-import { rgbToHex, rgbToGrayscale } from '../utils/colorUtils';
+import { useRef, useEffect, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
+import { rgbToGrayscale } from '../utils/colorUtils';
 import { extractBoundaries } from '../utils/slic';
 import './ColoringCanvas.css';
 
-export function ColoringCanvas({
+export const ColoringCanvas = forwardRef(function ColoringCanvas({
   processedData,
   coloredRegions,
   highlightedRegions,
   selectedColor,
+  showNumbers,
+  displayMode,
   onRegionClick
-}) {
+}, ref) {
   const canvasRef = useRef(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPos, setLastPanPos] = useState({ x: 0, y: 0 });
 
-  const { width, height, imageData, labels, palette, regionColors } = processedData || {};
+  // Expose canvas ref to parent
+  useImperativeHandle(ref, () => ({
+    getCanvas: () => canvasRef.current
+  }), []);
+
+  const { width, height, labels, palette, regionColors, regionData } = processedData || {};
 
   // Render the canvas
   useEffect(() => {
@@ -51,8 +58,20 @@ export function ColoringCanvas({
         outputData.data[idx + 1] = Math.min(255, gray + 80);
         outputData.data[idx + 2] = Math.min(255, gray + 100);
         outputData.data[idx + 3] = 255;
+      } else if (displayMode === 'extreme') {
+        // Extreme mode: all white, no boundaries
+        outputData.data[idx] = 255;
+        outputData.data[idx + 1] = 255;
+        outputData.data[idx + 2] = 255;
+        outputData.data[idx + 3] = 255;
+      } else if (displayMode === 'outlined') {
+        // Outlined mode: white background, boundaries drawn separately below
+        outputData.data[idx] = 255;
+        outputData.data[idx + 1] = 255;
+        outputData.data[idx + 2] = 255;
+        outputData.data[idx + 3] = 255;
       } else {
-        // Region is uncolored - show grayscale
+        // Grayout mode (default) - show grayscale
         const gray = rgbToGrayscale(color);
         outputData.data[idx] = gray;
         outputData.data[idx + 1] = gray;
@@ -60,8 +79,8 @@ export function ColoringCanvas({
         outputData.data[idx + 3] = 255;
       }
 
-      // Draw boundaries darker
-      if (boundaries.has(i)) {
+      // Draw boundaries darker (skip for extreme mode)
+      if (displayMode !== 'extreme' && boundaries.has(i)) {
         outputData.data[idx] = Math.max(0, outputData.data[idx] - 40);
         outputData.data[idx + 1] = Math.max(0, outputData.data[idx + 1] - 40);
         outputData.data[idx + 2] = Math.max(0, outputData.data[idx + 2] - 40);
@@ -69,7 +88,47 @@ export function ColoringCanvas({
     }
 
     ctx.putImageData(outputData, 0, 0);
-  }, [processedData, coloredRegions, highlightedRegions, width, height, labels, palette, regionColors]);
+
+    if (showNumbers && regionData) {
+      ctx.save();
+      const fontSize = Math.max(10, Math.round(Math.min(width, height) * 0.02));
+      ctx.font = `600 ${fontSize}px "Trebuchet MS", "DejaVu Sans", Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      regionData.forEach((data, regionId) => {
+        const pixels = data.pixels;
+        if (!pixels || pixels.length === 0) return;
+
+        let sumX = 0;
+        let sumY = 0;
+        for (let i = 0; i < pixels.length; i++) {
+          const idx = pixels[i];
+          sumX += idx % width;
+          sumY += Math.floor(idx / width);
+        }
+
+        const centerX = sumX / pixels.length;
+        const centerY = sumY / pixels.length;
+        const colorIdx = regionColors.get(regionId);
+        const color = palette[colorIdx];
+        const gray = rgbToGrayscale(color);
+        // In outlined/extreme modes, background is white so use dark text
+        const bgIsLight = (displayMode === 'outlined' || displayMode === 'extreme') 
+          ? true 
+          : gray > 140;
+        const textColor = bgIsLight ? 'rgba(20, 20, 20, 0.75)' : 'rgba(245, 245, 245, 0.85)';
+        const label = String(colorIdx + 1);
+
+        ctx.lineWidth = Math.max(2, fontSize * 0.15);
+        ctx.strokeStyle = bgIsLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+        ctx.strokeText(label, centerX, centerY);
+        ctx.fillStyle = textColor;
+        ctx.fillText(label, centerX, centerY);
+      });
+      ctx.restore();
+    }
+  }, [processedData, coloredRegions, highlightedRegions, width, height, labels, palette, regionColors, regionData, showNumbers, displayMode]);
 
   // Handle click to color region
   const handleClick = useCallback((e) => {
@@ -162,6 +221,6 @@ export function ColoringCanvas({
       </div>
     </div>
   );
-}
+});
 
 export default ColoringCanvas;

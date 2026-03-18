@@ -141,6 +141,97 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.sidebar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-btn.toggle {
+  background: #ccc;
+  color: #555;
+}
+
+.sidebar-btn.toggle.active {
+  background: #4a90d9;
+  color: white;
+}
+
+.sidebar-btn.toggle-mode {
+  flex: 1;
+  font-size: 12px;
+}
+
+.sidebar-btn.toggle-mode.persistent {
+  background: #4a90d9;
+  color: white;
+}
+
+.sidebar-btn.toggle-mode.timed {
+  background: #f0ad4e;
+  color: white;
+}
+
+.display-mode-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.display-mode-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.display-mode-select:hover {
+  border-color: #4a90d9;
+}
+
+.display-mode-select:focus {
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.sidebar-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #4a90d9;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.sidebar-btn:hover:not(:disabled) {
+  background: #3f7fc0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(74, 144, 217, 0.35);
+}
+
+.sidebar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .game-screen {
